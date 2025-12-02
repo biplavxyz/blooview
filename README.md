@@ -1,6 +1,9 @@
 # BlooView
 Filesystem and Network Monitoring Tool For Linux that runs within a Terminal.
 
+# Demo
+<img src="./BlooViewSimple.gif" alt="Blooview Demo">
+
 # Installation
 - Install Golang
 - Clone the repo

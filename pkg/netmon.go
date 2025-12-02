@@ -12,6 +12,7 @@ import (
 	"github.com/shirou/gopsutil/v4/process"
 )
 
+// ConnInfo holds all fields related to each process for displaying
 type ConnInfo struct {
 	PID         int
 	User        string
@@ -38,9 +39,10 @@ type NetworkMonitor struct {
 	app      *cview.Application
 	view     *cview.TextView
 	done     chan struct{}
-	prevCwds map[int]string // track PID → Cwd for highlighting
+	prevCwds map[int]string
 }
 
+// NewNetworkMonitor is the view that displays all changes
 func NewNetworkMonitor(app *cview.Application) *NetworkMonitor {
 	m := &NetworkMonitor{
 		app:      app,
@@ -128,8 +130,7 @@ func (m *NetworkMonitor) refresh() {
 	})
 }
 
-// --- Network connection helpers ---
-
+// GetEstablishedConnectionTree returns tree of all established TCP4 and TCP6 connections
 func GetEstablishedConnectionTree() ([]ConnInfo, error) {
 	socks, err := getAllEstablishedSocks()
 	if err != nil {
@@ -165,6 +166,7 @@ func GetEstablishedConnectionTree() ([]ConnInfo, error) {
 	return results, nil
 }
 
+// getAllEstablishedSocks returns all established sockets for Ipv4 and Ipv6
 func getAllEstablishedSocks() ([]netstat.SockTabEntry, error) {
 	filter := func(s *netstat.SockTabEntry) bool {
 		return s.State == netstat.Established
@@ -183,6 +185,7 @@ func getAllEstablishedSocks() ([]netstat.SockTabEntry, error) {
 	return append(v4, v6...), nil
 }
 
+// buildConnInfo is the builder that does parsing and formatting
 func buildConnInfo(sock netstat.SockTabEntry, pid int, isChild bool) (ConnInfo, error) {
 	ps, err := process.NewProcess(int32(pid))
 	if err != nil {
@@ -205,6 +208,7 @@ func buildConnInfo(sock netstat.SockTabEntry, pid int, isChild bool) (ConnInfo, 
 	}, nil
 }
 
+// getAllChildPIDs Returns all child processes recursively if a parent spawns a child process
 func getAllChildPIDs(pid int) ([]int, error) {
 	path := fmt.Sprintf("/proc/%d/task/%d/children", pid, pid)
 

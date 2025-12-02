@@ -28,6 +28,7 @@ type FsMonitor struct {
 	done    chan struct{}
 }
 
+// NewFsMonitor is the main view for Filesystem changes
 func NewFsMonitor(app *cview.Application) *FsMonitor {
 	m := &FsMonitor{
 		app:  app,
@@ -64,7 +65,7 @@ func NewFsMonitor(app *cview.Application) *FsMonitor {
 	return m
 }
 
-// Displaying
+// appending messages
 func (m *FsMonitor) append(msg string) {
 	m.logs = append(m.logs, msg)
 
@@ -136,6 +137,7 @@ func (m *FsMonitor) coloredEvent(evt fsnotify.Event) string {
 	return fmt.Sprintf("%s %s %s %s %s", curTime, eventType, uid, gid, evt.Name)
 }
 
+// GetUID returns UID for a certain event
 func GetUID(path string) (string, string) {
 	info, err := os.Stat(path)
 	if err != nil {

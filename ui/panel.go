@@ -27,6 +27,8 @@ func Tabbedpanel(app *cview.Application) *cview.TabbedPanels {
 	panel.AddTab("blooview", "BlooView - Filesystem and Network Monitoring Tool", BoxViewHome("BlooView Stat"))
 	panel.AddTab("filesystem", "[1]-Files", fsPanel.View())
 	panel.AddTab("network", "[2]-Network Processes", networkMonitor.View())
+
+	// Update every 1 second
 	networkMonitor.StartRefresh(1000)
 
 	// panel.SetCurrentTab("filesystem")
