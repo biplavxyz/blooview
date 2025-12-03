@@ -42,6 +42,7 @@ func NewFsMonitor(app *cview.Application) *FsMonitor {
 	m.view.SetScrollable(true)
 	m.view.SetScrollBarColor(tcell.ColorOrange)
 	m.view.SetWrap(true)
+
 	m.view.SetChangedFunc(func() {
 		app.Draw()
 	})
@@ -67,16 +68,18 @@ func NewFsMonitor(app *cview.Application) *FsMonitor {
 
 // appending messages
 func (m *FsMonitor) append(msg string) {
-	m.logs = append(m.logs, msg)
+	// Prepend new log at the top
+	m.logs = append([]string{msg}, m.logs...)
 
-	// If the log exceeds the maximum, trim the oldest TrimLogs lines
+	// Trim excess logs (remove from bottom instead of top)
 	if len(m.logs) > MaxLogs {
-		m.logs = m.logs[TrimLogs:] // keep the most recent logs
+		m.logs = m.logs[:MaxLogs]
 	}
 
 	m.app.QueueUpdateDraw(func() {
 		m.view.SetText(strings.Join(m.logs, "\n"))
-		m.view.ScrollToEnd()
+		// Optional: jump to top automatically
+		m.view.ScrollToBeginning()
 	})
 }
 
@@ -134,7 +137,7 @@ func (m *FsMonitor) coloredEvent(evt fsnotify.Event) string {
 		eventType = "[white:black:ru]UNKNOWN [white]"
 	}
 
-	return fmt.Sprintf("%s %s %s %s %s", curTime, eventType, uid, gid, evt.Name)
+	return fmt.Sprintf("%-20s %-15s %s %s %s", curTime, eventType, uid, gid, evt.Name)
 }
 
 // GetUID returns UID for a certain event

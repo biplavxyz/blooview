@@ -31,8 +31,6 @@ func Tabbedpanel(app *cview.Application) *cview.TabbedPanels {
 	// Update every 1 second
 	networkMonitor.StartRefresh(1000)
 
-	// panel.SetCurrentTab("filesystem")
-
 	// Return Panel
 	return panel
 }
