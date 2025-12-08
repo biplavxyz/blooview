@@ -25,6 +25,8 @@ func main() {
 			mainTabbedUI.SetCurrentTab("filesystem")
 		} else if event.Rune() == 50 { // 50 = 2
 			mainTabbedUI.SetCurrentTab("network")
+		} else if event.Rune() == 51 { // 51 = 3
+			mainTabbedUI.SetCurrentTab("execvesyscall")
 		}
 
 		return event

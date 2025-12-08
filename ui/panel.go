@@ -22,11 +22,13 @@ func Tabbedpanel(app *cview.Application) *cview.TabbedPanels {
 	// Set Panels Here
 	fsPanel := pkg.NewFsMonitor(app)
 	networkMonitor := pkg.NewNetworkMonitor(app)
+	execveMonitor := pkg.NewExecveMonitor(app)
 
 	// Tabs for the Panel
 	panel.AddTab("blooview", "BlooView - Filesystem and Network Monitoring Tool", BoxViewHome("BlooView Stat"))
 	panel.AddTab("filesystem", "[1]-Files", fsPanel.View())
 	panel.AddTab("network", "[2]-Network Processes", networkMonitor.View())
+	panel.AddTab("execvesyscall", "[3]-Execve Syscalls", execveMonitor.View())
 
 	// Update every 1 second
 	networkMonitor.StartRefresh(1000)

@@ -23,6 +23,6 @@ Filesystem and Network Monitoring Tool For Linux that runs within a Terminal.
 # Progress
 - [x] Display filesystem changes.
 - [x] Display established network connection information.
-- [ ] Execve Syscall Tracing
+- [x] Execve Syscall monitoring by tracing `sys_enter_execve`.
 - [ ] Display live commands being run by established net process.
 - [ ] Write tests.

@@ -194,7 +194,7 @@ func buildConnInfo(sock netstat.SockTabEntry, pid int, isChild bool) (ConnInfo, 
 
 	user, _ := ps.Username()
 	exe, _ := ps.Exe()
-	cwd, _ := ps.Cwd() // get current working directory
+	cwd, _ := ps.Cwd()
 
 	return ConnInfo{
 		PID:         pid,

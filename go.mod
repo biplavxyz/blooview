@@ -6,6 +6,7 @@ require (
 	codeberg.org/tslocum/cview v1.6.0
 	github.com/BurntSushi/toml v1.5.0
 	github.com/cakturk/go-netstat v0.0.0-20200220111822-e5b49efee7a5
+	github.com/cilium/ebpf v0.20.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gdamore/tcell/v2 v2.9.0
 	github.com/shirou/gopsutil/v4 v4.25.10

@@ -66,20 +66,16 @@ func NewFsMonitor(app *cview.Application) *FsMonitor {
 	return m
 }
 
-// appending messages
+// Prepend messages to the top
 func (m *FsMonitor) append(msg string) {
-	// Prepend new log at the top
 	m.logs = append([]string{msg}, m.logs...)
 
-	// Trim excess logs (remove from bottom instead of top)
 	if len(m.logs) > MaxLogs {
 		m.logs = m.logs[:MaxLogs]
 	}
 
 	m.app.QueueUpdateDraw(func() {
 		m.view.SetText(strings.Join(m.logs, "\n"))
-		// Optional: jump to top automatically
-		m.view.ScrollToBeginning()
 	})
 }
 
