@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -12,7 +13,7 @@ import (
 	"github.com/shirou/gopsutil/v4/process"
 )
 
-// ConnInfo holds all fields related to each process for displaying
+// ConnInfo holds all fields related to each established network process
 type ConnInfo struct {
 	PID         int
 	User        string
@@ -21,6 +22,7 @@ type ConnInfo struct {
 	Cwd         string
 	LocalAddr   string
 	RemoteAddr  string
+	PTR         string
 	IsChildProc bool
 }
 
@@ -29,12 +31,11 @@ func (c *ConnInfo) String() string {
 	if c.IsChildProc {
 		label = "CHILD "
 	}
-	return fmt.Sprintf("[neonpink:darkpurple:bl] %-8s %-8d %-8s %-8d %-55s %-40s %-s",
-		label, c.PID, c.User, c.UID, c.RemoteAddr, c.Exe, c.Cwd,
+	return fmt.Sprintf("[neonpink:darkpurple:bl] %-8s %-8d %-8s %-8d %-55s %-50s %-40s %-s",
+		label, c.PID, c.User, c.UID, c.RemoteAddr, c.PTR, c.Exe, c.Cwd,
 	)
 }
 
-// NetworkMonitor holds the table and refresh loop
 type NetworkMonitor struct {
 	app      *cview.Application
 	view     *cview.TextView
@@ -42,7 +43,7 @@ type NetworkMonitor struct {
 	prevCwds map[int]string
 }
 
-// NewNetworkMonitor is the view that displays all changes
+// NewNetworkMonitor defines the view
 func NewNetworkMonitor(app *cview.Application) *NetworkMonitor {
 	m := &NetworkMonitor{
 		app:      app,
@@ -56,20 +57,13 @@ func NewNetworkMonitor(app *cview.Application) *NetworkMonitor {
 	m.view.SetBorder(true)
 	m.view.SetWrap(true)
 	m.view.SetTitle("[black:violet:blr] Established Network Connections")
-	m.view.SetChangedFunc(func() {
-		app.Draw()
-	})
+	m.view.SetChangedFunc(func() { app.Draw() })
 
 	return m
 }
 
-func (m *NetworkMonitor) Stop() {
-	close(m.done)
-}
-
-func (m *NetworkMonitor) View() *cview.TextView {
-	return m.view
-}
+func (m *NetworkMonitor) Stop()                 { close(m.done) }
+func (m *NetworkMonitor) View() *cview.TextView { return m.view }
 
 // StartRefresh starts the background loop that updates the TextView every intervalMS milliseconds
 func (m *NetworkMonitor) StartRefresh(intervalMS int) {
@@ -96,8 +90,10 @@ func (m *NetworkMonitor) refresh() {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("[neonpink:darkpurple:blr] %-8s %-8s %-8s %-8s %-55s %-40s %-s\n",
-		"Type", "PID", "User", "UID", "RemoteAddr", "Exe", "Cwd"))
+	sb.WriteString(fmt.Sprintf(
+		"[neonpink:darkpurple:blr] %-8s %-8s %-8s %-8s %-55s %-50s %-40s %-s\n",
+		"Type", "PID", "User", "UID", "RemoteAddr", "PTR", "Exe", "Cwd",
+	))
 
 	for _, c := range conns {
 		cwdChanged := false
@@ -107,8 +103,8 @@ func (m *NetworkMonitor) refresh() {
 		m.prevCwds[c.PID] = c.Cwd
 
 		if cwdChanged {
-			// Highlight changed CWD
-			sb.WriteString(fmt.Sprintf("[black:blue:bl] %-8s %-8d %-8s %-8d %-55s %-40s %-s\n",
+			sb.WriteString(fmt.Sprintf(
+				"[black:blue:bl] %-8s %-8d %-8s %-8d %-55s %-50s %-40s %-s\n",
 				func() string {
 					if c.IsChildProc {
 						return "CHILD "
@@ -116,7 +112,7 @@ func (m *NetworkMonitor) refresh() {
 						return "PARENT"
 					}
 				}(),
-				c.PID, c.User, c.UID, c.RemoteAddr, c.Exe, c.Cwd,
+				c.PID, c.User, c.UID, c.RemoteAddr, c.PTR, c.Exe, c.Cwd,
 			))
 		} else {
 			sb.WriteString(c.String())
@@ -125,9 +121,7 @@ func (m *NetworkMonitor) refresh() {
 	}
 
 	output := sb.String()
-	m.app.QueueUpdateDraw(func() {
-		m.view.SetText(output)
-	})
+	m.app.QueueUpdateDraw(func() { m.view.SetText(output) })
 }
 
 // GetEstablishedConnectionTree returns tree of all established TCP4 and TCP6 connections
@@ -140,22 +134,16 @@ func GetEstablishedConnectionTree() ([]ConnInfo, error) {
 	var results []ConnInfo
 
 	for _, sock := range socks {
-		// Skip if PID is missing
 		if sock.Process == nil {
 			continue
 		}
-
 		pid := sock.Process.Pid
-
-		// Descendant PIDs
 		children, _ := getAllChildPIDs(pid)
 
-		// Parent
 		if info, err := buildConnInfo(sock, pid, false); err == nil {
 			results = append(results, info)
 		}
 
-		// Children
 		for _, cp := range children {
 			if info, err := buildConnInfo(sock, cp, true); err == nil {
 				results = append(results, info)
@@ -168,9 +156,7 @@ func GetEstablishedConnectionTree() ([]ConnInfo, error) {
 
 // getAllEstablishedSocks returns all established sockets for Ipv4 and Ipv6
 func getAllEstablishedSocks() ([]netstat.SockTabEntry, error) {
-	filter := func(s *netstat.SockTabEntry) bool {
-		return s.State == netstat.Established
-	}
+	filter := func(s *netstat.SockTabEntry) bool { return s.State == netstat.Established }
 
 	v4, err := netstat.TCPSocks(filter)
 	if err != nil {
@@ -185,7 +171,6 @@ func getAllEstablishedSocks() ([]netstat.SockTabEntry, error) {
 	return append(v4, v6...), nil
 }
 
-// buildConnInfo is the builder that does parsing and formatting
 func buildConnInfo(sock netstat.SockTabEntry, pid int, isChild bool) (ConnInfo, error) {
 	ps, err := process.NewProcess(int32(pid))
 	if err != nil {
@@ -195,6 +180,10 @@ func buildConnInfo(sock netstat.SockTabEntry, pid int, isChild bool) (ConnInfo, 
 	user, _ := ps.Username()
 	exe, _ := ps.Exe()
 	cwd, _ := ps.Cwd()
+	remote := sock.RemoteAddr.String()
+
+	ip := sock.RemoteAddr.IP.String()
+	ptr := getPtrRecords(ip)
 
 	return ConnInfo{
 		PID:         pid,
@@ -203,7 +192,8 @@ func buildConnInfo(sock netstat.SockTabEntry, pid int, isChild bool) (ConnInfo, 
 		Exe:         exe,
 		Cwd:         cwd,
 		LocalAddr:   sock.LocalAddr.String(),
-		RemoteAddr:  sock.RemoteAddr.String(),
+		RemoteAddr:  remote,
+		PTR:         ptr,
 		IsChildProc: isChild,
 	}, nil
 }
@@ -211,7 +201,6 @@ func buildConnInfo(sock netstat.SockTabEntry, pid int, isChild bool) (ConnInfo, 
 // getAllChildPIDs Returns all child processes recursively if a parent spawns a child process
 func getAllChildPIDs(pid int) ([]int, error) {
 	path := fmt.Sprintf("/proc/%d/task/%d/children", pid, pid)
-
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -227,13 +216,11 @@ func getAllChildPIDs(pid int) ([]int, error) {
 
 	fields := strings.Fields(content)
 	var results []int
-
 	for _, f := range fields {
 		childPID, err := strconv.Atoi(f)
 		if err != nil {
 			continue
 		}
-
 		results = append(results, childPID)
 
 		grand, err := getAllChildPIDs(childPID)
@@ -243,4 +230,15 @@ func getAllChildPIDs(pid int) ([]int, error) {
 	}
 
 	return results, nil
+}
+
+// getPtrRecords returns PTR lookup result if available
+func getPtrRecords(ip string) string {
+	ptrRecs, err := net.LookupAddr(ip)
+	if err != nil {
+		return fmt.Sprintf("%-50s", "N/A")
+	}
+
+	joined := strings.Join(ptrRecs, ",")
+	return fmt.Sprintf("%-50s", joined)
 }
