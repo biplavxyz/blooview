@@ -24,6 +24,6 @@ Filesystem and Network Monitoring Tool For Linux that runs within a Terminal.
 - [x] Display filesystem changes.
 - [x] Display established network connection information.
 - [x] Execve Syscall monitoring by tracing `sys_enter_execve`.
-- [ ] PTR lookup for IP addresses under established connections.
+- [x] PTR lookup for IP addresses under established connections.
 - [ ] Display live commands being run by established net process.
 - [ ] Write tests.
