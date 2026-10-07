@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
 	"time"
 
 	"codeberg.org/tslocum/cview"
@@ -27,17 +28,25 @@ type ExecveMonitor struct {
 	view *cview.TextView
 	logs []string
 
+	filterParams []string
+
 	done    chan struct{}
 	msgChan chan string
 }
 
 // NewExecveMonitor sets up view and everything
 func NewExecveMonitor(app *cview.Application) *ExecveMonitor {
+
+	filterParams, err := GetExecveFilter(GetConfigPath())
+	if err != nil {
+		filterParams = []string{"devnull"}
+	}
 	m := &ExecveMonitor{
-		app:     app,
-		view:    cview.NewTextView(),
-		done:    make(chan struct{}),
-		msgChan: make(chan string, 1024),
+		app:          app,
+		view:         cview.NewTextView(),
+		filterParams: filterParams,
+		done:         make(chan struct{}),
+		msgChan:      make(chan string, 1024),
 	}
 
 	m.view.SetDynamicColors(true)
@@ -76,6 +85,19 @@ func (m *ExecveMonitor) append(msg string) {
 	})
 }
 
+// matchesFilter checks if the filename  matches any of the filtered binaries
+func matchesFilter(filename string, filters []string) bool {
+	if len(filters) == 0 {
+		return true
+	}
+	for _, f := range filters {
+		if strings.Contains(filename, f) {
+			return true
+		}
+	}
+	return false
+}
+
 // joinLines avoids repeated strings.Join allocations
 func joinLines(lines []string) string {
 	var buf bytes.Buffer
@@ -92,7 +114,7 @@ func joinLines(lines []string) string {
 func (m *ExecveMonitor) runLoop() {
 	// Launch BPF goroutine
 	go func() {
-		err := runBPF(m.msgChan)
+		err := runBPF(m.msgChan, m.filterParams)
 		if err != nil {
 			m.msgChan <- fmt.Sprintf("[red]BPF error: %v[-]", err)
 		}
@@ -114,7 +136,7 @@ func (m *ExecveMonitor) runLoop() {
 }
 
 // runBPF streams BPF events and sends formatted strings to msgChan
-func runBPF(out chan<- string) error {
+func runBPF(out chan<- string, filters []string) error {
 	// Allow locking memory
 	if err := rlimit.RemoveMemlock(); err != nil {
 		return fmt.Errorf("memlock: %w", err)
@@ -171,6 +193,11 @@ func runBPF(out chan<- string) error {
 		// Convert to C string
 		idx := bytes.IndexByte(e.Filename[:], 0)
 		filename := string(e.Filename[:idx])
+
+		// Apply user-space string matching filter
+		if !matchesFilter(filename, filters) {
+			continue
+		}
 
 		out <- fmt.Sprintf("[green]PID %d[-]  [cyan]%s[-]", e.Pid, filename)
 	}

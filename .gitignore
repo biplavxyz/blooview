@@ -1,2 +1,4 @@
 bin/*
 !bin/blooview.toml
+bpf/execve.bpf.o
+bpf/vmlinux.h

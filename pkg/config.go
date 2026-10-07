@@ -8,43 +8,37 @@ import (
 )
 
 type Config struct {
-	FilePaths []string
+	ExecveFilter []string `toml:"ExecveFilter"`
+	Filepaths    []string `toml:"Filepaths"`
 }
 
-func ReadConfig() string {
-	// Read User's Home Path
-	userHomeDir, err := os.UserHomeDir()
+// Returns list of filepaths to monitor
+func GetFilepaths(filePath string) ([]string, error) {
+	var cfg Config
+	_, err := toml.DecodeFile(filePath, &cfg)
 	if err != nil {
-		// Return error if home directory not found
-		return "Error finding user's home directory; Please set $HOME" + err.Error()
+		return nil, err
 	}
-	// Read Config File
-	// If the file does not exist; return error
-	if _, err := os.Stat(userHomeDir + "/.config/blooview/blooview.toml"); os.IsNotExist(err) {
-		return userHomeDir + "/.config/blooview/blooview.toml does not exist; Please create that config file;" + err.Error()
-	}
-
-	filesToMonitor := ReadToml(userHomeDir + "/.config/blooview/blooview.toml")
-	fls := strings.Join(filesToMonitor, "\n")
-
-	return fls
+	return cfg.Filepaths, nil
 }
 
-func ReadToml(path string) []string {
-	var fPs Config
+// Return a single string of filepaths
+func GetFilePathsSingle(filePaths []string) string {
+	fPs := strings.Join(filePaths, "\n")
 
-	// Decode toml
-	_, err := toml.DecodeFile(path, &fPs)
+	return fPs
+}
+
+// Returns list of filtered commands
+func GetExecveFilter(filePath string) ([]string, error) {
+	var conf Config
+
+	_, err := toml.DecodeFile(filePath, &conf)
 	if err != nil {
-		var errorMsg []string
-		errorMsg = append(errorMsg, "Error decoding TOML config File"+err.Error())
-		return errorMsg
+		return nil, err
 	}
 
-	// Get all file paths
-	files := fPs.FilePaths
-
-	return files
+	return conf.ExecveFilter, nil
 }
 
 func GetConfigPath() string {
@@ -53,6 +47,10 @@ func GetConfigPath() string {
 	if err != nil {
 		// Return error if home directory not found
 		return "Error finding user's home directory; Please set $HOME" + err.Error()
+	}
+
+	if _, err := os.Stat(userHomeDir + "/.config/blooview/blooview.toml"); os.IsNotExist(err) {
+		return userHomeDir + "/.config/blooview/blooview.toml does not exist; Please create that config file;" + err.Error()
 	}
 
 	configPath := userHomeDir + "/.config/blooview/blooview.toml"

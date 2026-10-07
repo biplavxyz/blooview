@@ -54,7 +54,10 @@ func NewFsMonitor(app *cview.Application) *FsMonitor {
 	}
 	m.watcher = watcher
 
-	paths := ReadToml(GetConfigPath())
+	paths, err := GetFilepaths(GetConfigPath())
+	if err != nil {
+		paths = []string{"/tmp"}
+	}
 	for _, p := range paths {
 		if err := m.watcher.Add(p); err != nil {
 			m.append("Failed to watch: " + p + " → " + err.Error())
