@@ -1,1 +1,2 @@
-Filepaths = ["/tmp", "/home/ubuntu/blooview"]
+ExecveFilter = ["nmap", "ping", "sudo", "curl", "wget"]
+Filepaths = ["/tmp"]

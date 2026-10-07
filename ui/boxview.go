@@ -37,8 +37,14 @@ func BoxViewHome(title string) *cview.TextView {
 	homeView.SetBorderAttributes(tcell.AttrBold)
 	homeView.SetTextColor(tcell.ColorGreenYellow)
 
+	fPaths, err := pkg.GetFilepaths(pkg.GetConfigPath())
+	if err != nil {
+		fPaths = []string{"Error decoding filepaths from TOML file"}
+	}
+	files := pkg.GetFilePathsSingle(fPaths)
+
 	// Get Config File Info
-	systemInfo := "----------------------------------\nWatching provided paths:\n----------------------------------\n" + pkg.ReadConfig()
+	systemInfo := "----------------------------------\nWatching provided paths:\n----------------------------------\n" + files
 
 	homeView.SetText(systemInfo)
 

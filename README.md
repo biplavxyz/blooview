@@ -5,6 +5,8 @@ Filesystem and Network Monitoring Tool For Linux that runs within a Terminal.
 <img src="./BlooViewSimple.gif" alt="Blooview Demo">
 
 # Installation
+- Install bpf
+- Install clang
 - Install Golang
 - Clone the repo
 `git clone https://github.com/biplavxyz/blooview`
@@ -25,5 +27,6 @@ Filesystem and Network Monitoring Tool For Linux that runs within a Terminal.
 - [x] Display established network connection information.
 - [x] Execve Syscall monitoring by tracing `sys_enter_execve`.
 - [x] PTR lookup for IP addresses under established connections.
+- [x] Execve syscall tracing for only user-provided set of commands.
 - [ ] Display live commands being run by established net process.
 - [ ] Write tests.
